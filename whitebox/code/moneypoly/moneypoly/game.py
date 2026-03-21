@@ -298,46 +298,65 @@ class Game:
         print(f"  Card drawn: \"{card['description']}\"")
         action = card["action"]
         value = card["value"]
+        handlers = {
+            "collect": self._apply_collect_card,
+            "pay": self._apply_pay_card,
+            "jail": self._apply_jail_card,
+            "jail_free": self._apply_jail_free_card,
+            "move_to": self._apply_move_to_card,
+            "birthday": self._apply_birthday_card,
+            "collect_from_all": self._apply_collect_from_all_card,
+        }
+        handler = handlers.get(action)
+        if handler is not None:
+            handler(player, value)
 
-        if action == "collect":
-            amount = self.bank.pay_out(value)
-            player.add_money(amount)
+    def _apply_collect_card(self, player, value):
+        """Credit the player with money from the bank."""
+        amount = self.bank.pay_out(value)
+        player.add_money(amount)
 
-        elif action == "pay":
-            player.deduct_money(value)
-            self.bank.collect(value)
+    def _apply_pay_card(self, player, value):
+        """Make the player pay money back to the bank."""
+        player.deduct_money(value)
+        self.bank.collect(value)
 
-        elif action == "jail":
-            player.go_to_jail()
-            print(f"  {player.name} has been sent to Jail!")
+    def _apply_jail_card(self, player, _value):
+        """Send the player directly to jail."""
+        player.go_to_jail()
+        print(f"  {player.name} has been sent to Jail!")
 
-        elif action == "jail_free":
-            player.get_out_of_jail_cards += 1
-            print(f"  {player.name} now holds a Get Out of Jail Free card.")
+    def _apply_jail_free_card(self, player, _value):
+        """Award a Get Out of Jail Free card to the player."""
+        player.get_out_of_jail_cards += 1
+        print(f"  {player.name} now holds a Get Out of Jail Free card.")
 
-        elif action == "move_to":
-            old_pos = player.position
-            player.position = value
-            if value < old_pos:
-                player.add_money(GO_SALARY)
-                print(f"  {player.name} passed Go and collected ${GO_SALARY}.")
-            tile = self.board.get_tile_type(value)
-            if tile == "property":
-                prop = self.board.get_property_at(value)
-                if prop:
-                    self._handle_property_tile(player, prop)
+    def _apply_move_to_card(self, player, value):
+        """Move the player to a target tile and resolve property interaction."""
+        old_pos = player.position
+        player.position = value
+        if value < old_pos:
+            player.add_money(GO_SALARY)
+            print(f"  {player.name} passed Go and collected ${GO_SALARY}.")
+        tile = self.board.get_tile_type(value)
+        if tile == "property":
+            prop = self.board.get_property_at(value)
+            if prop:
+                self._handle_property_tile(player, prop)
 
-        elif action == "birthday":
-            for other in self.players:
-                if other != player and other.balance >= value:
-                    other.deduct_money(value)
-                    player.add_money(value)
+    def _apply_birthday_card(self, player, value):
+        """Collect birthday money from other players who can afford it."""
+        for other in self.players:
+            if other != player and other.balance >= value:
+                other.deduct_money(value)
+                player.add_money(value)
 
-        elif action == "collect_from_all":
-            for other in self.players:
-                if other != player and other.balance >= value:
-                    other.deduct_money(value)
-                    player.add_money(value)
+    def _apply_collect_from_all_card(self, player, value):
+        """Collect a fixed amount from every other eligible player."""
+        for other in self.players:
+            if other != player and other.balance >= value:
+                other.deduct_money(value)
+                player.add_money(value)
 
 
     def _check_bankruptcy(self, player):
