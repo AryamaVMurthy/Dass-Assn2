@@ -1,7 +1,10 @@
+"""Banking utilities for tracking MoneyPoly funds and loans."""
+
 from moneypoly.config import BANK_STARTING_FUNDS
 
 
 class Bank:
+    """Track bank reserves, payouts, collections, and emergency loans."""
     def __init__(self):
         self._funds = BANK_STARTING_FUNDS
         self._loans_issued = []

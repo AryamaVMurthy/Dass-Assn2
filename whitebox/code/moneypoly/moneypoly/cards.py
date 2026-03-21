@@ -1,3 +1,5 @@
+"""Card deck definitions and draw behavior for chance-based events."""
+
 import random
 
 CHANCE_CARDS = [
