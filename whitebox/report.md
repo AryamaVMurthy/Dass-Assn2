@@ -129,6 +129,36 @@ These areas were chosen because they directly influence game state and can easil
    - Why the test was needed: the bank and player states should stay consistent after loan issuance.
    - Fix: debited bank funds when the loan was issued.
 
+12. `Error 12: Enforce minimum player count in game setup`
+   - Problem found: the program prompt required at least two players, but `Game()` still accepted zero or one player.
+   - Why the test was needed: setup validation is part of the documented program contract and `main()` was already prepared to surface setup errors.
+   - Fix: added a `ValueError` guard in `Game.__init__()` when fewer than two player names are provided.
+
+13. `Error 13: Preserve turn order after player elimination`
+   - Problem found: if the current player went bankrupt during their turn, `play_turn()` still advanced the index and could skip the next active player or print a doubles retry message for an eliminated player.
+   - Why the test was needed: bankruptcy cleanup changes the player list during active control flow, which makes turn-order handling a high-risk white-box branch.
+   - Fix: corrected `_check_bankruptcy()` index handling and short-circuited `play_turn()` when the active player is eliminated mid-turn.
+
+14. `Error 14: Include owned assets in net worth`
+   - Problem found: `Player.net_worth()` returned only cash balance and ignored owned properties, which made standings and winner selection wrong in asset-heavy states.
+   - Why the test was needed: `net_worth()` is used by both the UI and final winner logic, so incorrect asset valuation affects multiple program outcomes.
+   - Fix: updated `net_worth()` to include owned property value, counting mortgaged properties at mortgage value.
+
+15. `Error 15: Expose pre-roll actions in the main turn flow`
+   - Problem found: the interactive mortgage / trade / loan menu existed but was never called from `play_turn()`, so those features were unreachable in normal gameplay.
+   - Why the test was needed: white-box analysis revealed dead control-flow branches that were implemented but not connected to the actual game loop.
+   - Fix: inserted the pre-roll menu call into the normal non-jail turn path before the dice roll.
+
+16. `Error 16: Use real bank payouts for mortgages`
+   - Problem found: mortgage payouts were implemented as `bank.collect(-amount)`, which reduced bank reserves but also corrupted the bank's `total_collected` accounting.
+   - Why the test was needed: mortgage handling is a money-transfer path and should preserve internal bank accounting consistency.
+   - Fix: changed mortgage payouts to use `Bank.pay_out()` instead of a fake negative collection.
+
+17. `Error 17: Prevent emergency loans from overdrawing the bank`
+   - Problem found: emergency loans could exceed bank reserves and drive the bank balance negative.
+   - Why the test was needed: the assignment expects explicit handling of invalid states, and silent bank overdrafts are a direct financial-model bug.
+   - Fix: routed loan issuance through `Bank.pay_out()` so oversized loans fail fast with `ValueError` and no state changes.
+
 ### Additional Branch Coverage Added
 
 After fixing the detected errors, I added more white-box tests to cover important branches that already behaved correctly:
@@ -156,9 +186,9 @@ PYTHONPATH='whitebox/code/moneypoly' .venv/bin/pytest whitebox/tests -q
 Final result:
 
 ```text
-73 passed in 0.04s
+83 passed in 0.05s
 ```
 
 ### Summary
 
-The white-box testing process found multiple logical issues in movement, winner selection, property transactions, group ownership, jail handling, card-deck edge cases, loan accounting, and trade flow. Each detected error was fixed through a separate small commit, and the final suite now covers a broad set of branches, variable states, helper behaviors, and edge cases derived from the control flow graph. The final submission includes `Error 1` through `Error 11` commits for defect correction and `Test 1` through `Test 15` commits for branch and edge-case expansion.
+The white-box testing process found multiple logical issues in movement, winner selection, setup validation, turn-order handling after bankruptcy, property transactions, group ownership, jail handling, card-deck edge cases, bank accounting, and trade flow. Each detected error was fixed through a separate small commit, and the final suite now covers a broad set of branches, variable states, helper behaviors, and edge cases derived from the control flow graph. The final submission now includes `Error 1` through `Error 17` commits for defect correction and `Test 1` through `Test 15` commits for branch and edge-case expansion.
