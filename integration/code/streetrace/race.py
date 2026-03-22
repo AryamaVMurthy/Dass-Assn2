@@ -25,6 +25,10 @@ class RaceService:
     def enter_driver(self, race_id, member_id, vehicle_id):
         """Enter a valid driver and vehicle into a race."""
         race = self._get_race(race_id)
+        if race.status == "completed":
+            raise ValueError("Race is already completed")
+        if race.status != "planned":
+            raise ValueError(f"Race cannot accept entries while {race.status}")
         member = self._registration.get_member(member_id)
         if member.role != "driver":
             raise ValueError("Driver role required for race entry")
@@ -39,6 +43,10 @@ class RaceService:
     def complete_race(self, race_id, position, damaged):
         """Complete a race and return the result payload."""
         race = self._get_race(race_id)
+        if race.status == "completed":
+            raise ValueError("Race is already completed")
+        if race.status != "ready":
+            raise ValueError("Race must be ready before completion")
         if race.driver_id is None or race.vehicle_id is None:
             raise ValueError("Race entry required before completion")
         if damaged:

@@ -26,3 +26,24 @@ def test_vehicle_cannot_be_entered_into_two_active_races():
     app.enter_race(second_race.race_id, second_driver.member_id, vehicle.vehicle_id)
 
     assert second_race.status == "ready"
+
+
+def test_completed_race_cannot_be_reentered_or_completed_again():
+    """Completed races should be terminal and reject repeat processing."""
+    app = StreetRaceApp()
+
+    driver = app.register_member("Sana", "rookie")
+    app.assign_role(driver.member_id, "driver", 9)
+    vehicle = app.add_vehicle("Eclipse", "Mitsubishi")
+    race = app.create_race("Night Loop", 3200)
+
+    app.enter_race(race.race_id, driver.member_id, vehicle.vehicle_id)
+    first = app.complete_race(race.race_id, position=1, damaged=False)
+
+    with pytest.raises(ValueError, match="Race is already completed"):
+        app.enter_race(race.race_id, driver.member_id, vehicle.vehicle_id)
+
+    with pytest.raises(ValueError, match="Race is already completed"):
+        app.complete_race(race.race_id, position=1, damaged=False)
+
+    assert first.race_id == race.race_id
