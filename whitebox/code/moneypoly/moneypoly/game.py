@@ -20,6 +20,8 @@ class Game:  # pylint: disable=too-many-instance-attributes
     """Manages the full state and flow of a MoneyPoly game session."""
 
     def __init__(self, player_names):
+        if len(player_names) < 2:
+            raise ValueError("MoneyPoly requires at least two players.")
         self.board = Board()
         self.bank = Bank()
         self.dice = Dice()
