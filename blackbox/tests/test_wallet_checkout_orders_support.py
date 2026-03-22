@@ -81,6 +81,97 @@ def test_checkout_card_creates_paid_order_with_expected_invoice_values(
     ]
 
 
+def test_cart_update_and_remove_follow_documented_error_rules(
+    session, base_url, user_headers, clean_cart
+):
+    """Cart update and remove should enforce quantity and presence checks."""
+    session.post(
+        f"{base_url}/api/v1/cart/add",
+        headers=user_headers,
+        json={"product_id": 1, "quantity": 1},
+        timeout=10,
+    )
+
+    update = session.post(
+        f"{base_url}/api/v1/cart/update",
+        headers=user_headers,
+        json={"product_id": 1, "quantity": 0},
+        timeout=10,
+    )
+    remove_missing = session.post(
+        f"{base_url}/api/v1/cart/remove",
+        headers=user_headers,
+        json={"product_id": 999999},
+        timeout=10,
+    )
+
+    assert update.status_code == 400
+    assert remove_missing.status_code == 404
+
+
+def test_cart_clear_empties_the_cart(session, base_url, user_headers, clean_cart):
+    """Clearing the cart should remove all items."""
+    session.post(
+        f"{base_url}/api/v1/cart/add",
+        headers=user_headers,
+        json={"product_id": 1, "quantity": 2},
+        timeout=10,
+    )
+
+    clear_response = session.delete(
+        f"{base_url}/api/v1/cart/clear",
+        headers=user_headers,
+        timeout=10,
+    )
+    cart_response = session.get(
+        f"{base_url}/api/v1/cart",
+        headers=user_headers,
+        timeout=10,
+    )
+
+    assert clear_response.status_code == 200
+    assert cart_response.status_code == 200
+    assert cart_response.json()["items"] == []
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="BUG: empty-cart checkout succeeds instead of returning 400",
+)
+def test_checkout_rejects_empty_cart(session, base_url, user_headers, clean_cart):
+    """Checkout should fail when the cart is empty."""
+    response = session.post(
+        f"{base_url}/api/v1/checkout",
+        headers=user_headers,
+        json={"payment_method": "CARD"},
+        timeout=10,
+    )
+
+    assert response.status_code == 400
+
+
+def test_checkout_rejects_invalid_payment_method(
+    session, base_url, user_headers, clean_cart
+):
+    """Unsupported payment methods should return a 400 error."""
+    session.post(
+        f"{base_url}/api/v1/cart/add",
+        headers=user_headers,
+        json={"product_id": 1, "quantity": 1},
+        timeout=10,
+    )
+
+    response = session.post(
+        f"{base_url}/api/v1/checkout",
+        headers=user_headers,
+        json={"payment_method": "CRYPTO"},
+        timeout=10,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "Invalid payment method"
+
+
 def test_checkout_rejects_cod_above_5000(session, base_url, user_headers, clean_cart):
     """COD should be rejected for totals above 5000."""
     session.post(
@@ -98,6 +189,53 @@ def test_checkout_rejects_cod_above_5000(session, base_url, user_headers, clean_
 
     assert response.status_code == 400
     assert response.json()["error"] == "COD not allowed for amount > 5000"
+
+
+def test_orders_list_and_detail_include_newly_created_order(
+    session, base_url, user_headers, clean_cart
+):
+    """Orders list and detail endpoints should expose a newly created order."""
+    session.post(
+        f"{base_url}/api/v1/cart/add",
+        headers=user_headers,
+        json={"product_id": 1, "quantity": 1},
+        timeout=10,
+    )
+    checkout = session.post(
+        f"{base_url}/api/v1/checkout",
+        headers=user_headers,
+        json={"payment_method": "CARD"},
+        timeout=10,
+    )
+    order_id = checkout.json()["order_id"]
+
+    list_response = session.get(
+        f"{base_url}/api/v1/orders",
+        headers=user_headers,
+        timeout=10,
+    )
+    detail_response = session.get(
+        f"{base_url}/api/v1/orders/{order_id}",
+        headers=user_headers,
+        timeout=10,
+    )
+
+    assert list_response.status_code == 200
+    assert any(order["order_id"] == order_id for order in list_response.json())
+    assert detail_response.status_code == 200
+    assert detail_response.json()["order_id"] == order_id
+
+
+def test_cancel_missing_order_returns_404(session, base_url, user_headers):
+    """Cancelling a missing order should return 404."""
+    response = session.post(
+        f"{base_url}/api/v1/orders/999999/cancel",
+        headers=user_headers,
+        timeout=10,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["error"] == "Order not found"
 
 
 @pytest.mark.xfail(
@@ -163,3 +301,23 @@ def test_support_ticket_status_only_moves_forward(session, base_url, user_header
     assert first_valid.json()["status"] == "IN_PROGRESS"
     assert second_valid.status_code == 200
     assert second_valid.json()["status"] == "CLOSED"
+
+
+def test_support_ticket_list_includes_created_ticket(session, base_url, user_headers):
+    """Ticket listing should include newly created support tickets."""
+    subject = f"Issue {uuid.uuid4().hex[:8]}"
+    create = session.post(
+        f"{base_url}/api/v1/support/ticket",
+        headers=user_headers,
+        json={"subject": subject, "message": "hello there"},
+        timeout=10,
+    )
+    list_response = session.get(
+        f"{base_url}/api/v1/support/tickets",
+        headers=user_headers,
+        timeout=10,
+    )
+
+    assert create.status_code == 200
+    assert list_response.status_code == 200
+    assert any(ticket["subject"] == subject for ticket in list_response.json())
