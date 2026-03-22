@@ -55,6 +55,7 @@ class Game:  # pylint: disable=too-many-instance-attributes
             self.advance_turn()
             return
 
+        self.interactive_menu(player)
         roll = self.dice.roll()
         print(f"  {player.name} rolled: {self.dice.describe()}")
 
