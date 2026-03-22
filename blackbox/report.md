@@ -10,6 +10,9 @@ The API was run locally on `http://127.0.0.1:8080` from the provided Docker imag
 
 The test suite covers:
 - required request headers
+- admin data-inspection endpoints
+- profile and address retrieval and validation
+- product listing, product detail, and search behavior
 - valid requests
 - invalid inputs
 - missing fields or headers
@@ -26,6 +29,7 @@ Using strict `xfail` keeps the suite executable while still making the bugs visi
 
 The final automated test suite includes:
 - `blackbox/tests/conftest.py`
+- `blackbox/tests/test_admin_and_product_details.py`
 - `blackbox/tests/test_headers.py`
 - `blackbox/tests/test_profile_and_addresses.py`
 - `blackbox/tests/test_products_and_cart.py`
@@ -39,35 +43,57 @@ The final automated test suite includes:
 - Non-integer `X-Roll-Number` returns `400`
 - Missing `X-User-ID` on user-scoped endpoints returns `400`
 
+### Admin / Inspection
+- admin users, carts, orders, products, coupons, tickets, and addresses endpoints return `200`
+- admin user detail endpoint returns a single object payload
+
 ### Profile and Addresses
+- profile GET returns the current user payload
 - profile update rejects a name shorter than 2 characters
 - profile update rejects a phone number that is not exactly 10 digits
+- addresses GET returns a list
 - valid address creation returns the created address object
 - created address can be deleted successfully
+- deleting a missing address returns `404`
 - address update response should return new data
 
 ### Products and Cart
 - product list supports category filtering
 - product list supports price sorting
+- product search filters by name fragment
+- unknown product detail returns `404`
 - adding a non-existent product returns `404`
 - adding quantity `0` should return `400`
+- cart update rejects quantity `0`
+- cart remove returns `404` when the product is not in the cart
+- cart clear empties the cart
 - cart item subtotal should equal `quantity * unit_price`
 - cart total should equal the sum of all item subtotals
 
 ### Wallet, Checkout, Orders, Coupons, Support
+- wallet GET returns the current balance field
+- wallet top-up rejects zero and above-limit amounts
 - wallet top-up and payment should change balance by the exact requested amount
+- checkout should reject an empty cart
+- invalid payment methods should be rejected
 - CARD checkout should create a `PAID` order
 - checkout invoice should satisfy `subtotal + GST = total`
 - COD above `5000` should be rejected
+- orders list and detail should include a newly created order
+- cancelling a missing order should return `404`
 - expired coupons should be rejected
+- coupon remove endpoint should return success
 - support tickets should start as `OPEN`
+- support ticket list should include newly created tickets
 - support ticket status should only move forward
 
 ### Loyalty and Reviews
+- loyalty GET returns the current points balance
 - loyalty redeem rejects `0` points
 - loyalty redeem rejects redemptions above available points
-- review average remains numeric after adding a review
+- review average matches the arithmetic mean of returned ratings
 - review rating below `1` should be rejected
+- empty review comments are rejected
 
 ## 3.4 Verification
 
@@ -80,7 +106,7 @@ The complete suite was run with:
 Final result:
 
 ```text
-13 passed, 7 xfailed in 0.51s
+35 passed, 8 xfailed in 0.76s
 ```
 
 The expected failures correspond to actual API defects confirmed against the documentation.
@@ -185,6 +211,22 @@ The expected failures correspond to actual API defects confirmed against the doc
 - Why it is a bug:
   - the documentation says rating must be between `1` and `5`
 
+### Bug 8: Checkout accepts an empty cart
+- Endpoint: `POST /api/v1/checkout`
+- Request:
+  - Method: `POST`
+  - URL: `/api/v1/checkout`
+  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Body: `{"payment_method": "CARD"}`
+- Expected result:
+  - status `400`
+  - checkout should fail because the cart is empty
+- Actual result:
+  - status `200`
+  - an order is created with zero totals
+- Why it is a bug:
+  - the documentation explicitly says the cart must not be empty during checkout
+
 ## 3.6 Summary
 
-The black-box suite validates the major documented behaviors of the QuickCart API and also identifies seven reproducible API defects. The tests are executable, isolated enough for repeated runs, and use strict expected-failure markers for the documented bugs so the suite remains useful while still exposing contract violations.
+The black-box suite now covers the major documented endpoint groups of the QuickCart API and identifies eight reproducible API defects. The tests are executable, isolated enough for repeated runs, and use strict expected-failure markers for the documented bugs so the suite remains useful while still exposing contract violations.
