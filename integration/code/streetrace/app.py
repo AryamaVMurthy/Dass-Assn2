@@ -15,14 +15,64 @@ class StreetRaceApp:
 
     def __init__(self):
         """Initialize shared services for the CLI and tests."""
-        self.registration = RegistrationService()
-        self.crew = CrewService(self.registration)
-        self.inventory = InventoryService()
-        self.garage = GarageService(self.inventory, self.crew, self.registration)
-        self.ledger = LedgerService()
-        self.race = RaceService(self.registration, self.inventory, self.garage)
-        self.results = ResultsService(self.inventory, self.ledger)
-        self.missions = MissionPlanningService(self.crew, self.garage)
+        registration = RegistrationService()
+        crew = CrewService(registration)
+        inventory = InventoryService()
+        garage = GarageService(inventory, crew, registration)
+        ledger = LedgerService()
+        race = RaceService(registration, inventory, garage)
+        results = ResultsService(inventory, ledger)
+        missions = MissionPlanningService(crew, garage)
+        self._services = {
+            "registration": registration,
+            "crew": crew,
+            "inventory": inventory,
+            "garage": garage,
+            "ledger": ledger,
+            "race": race,
+            "results": results,
+            "missions": missions,
+        }
+
+    @property
+    def registration(self):
+        """Return the registration service."""
+        return self._services["registration"]
+
+    @property
+    def crew(self):
+        """Return the crew-management service."""
+        return self._services["crew"]
+
+    @property
+    def inventory(self):
+        """Return the inventory service."""
+        return self._services["inventory"]
+
+    @property
+    def garage(self):
+        """Return the garage service."""
+        return self._services["garage"]
+
+    @property
+    def ledger(self):
+        """Return the ledger service."""
+        return self._services["ledger"]
+
+    @property
+    def race(self):
+        """Return the race-management service."""
+        return self._services["race"]
+
+    @property
+    def results(self):
+        """Return the results service."""
+        return self._services["results"]
+
+    @property
+    def missions(self):
+        """Return the mission-planning service."""
+        return self._services["missions"]
 
     def register_member(self, name, role):
         """Register a crew member."""
