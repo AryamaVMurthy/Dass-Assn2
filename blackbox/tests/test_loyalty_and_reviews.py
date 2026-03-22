@@ -28,31 +28,59 @@ def test_loyalty_redeem_rejects_zero_and_insufficient_points(
     assert too_many_response.json()["error"] == "Insufficient points"
 
 
+def test_loyalty_get_returns_points_balance(session, base_url, user_headers):
+    """The loyalty endpoint should expose the user's current points balance."""
+    response = session.get(
+        f"{base_url}/api/v1/loyalty",
+        headers=user_headers,
+        timeout=10,
+    )
+
+    assert response.status_code == 200
+    assert "loyalty_points" in response.json()
+
+
+def test_wallet_rejects_invalid_top_up_amounts(session, base_url, user_headers):
+    """Wallet top-up should reject zero and above-limit amounts."""
+    zero_response = session.post(
+        f"{base_url}/api/v1/wallet/add",
+        headers=user_headers,
+        json={"amount": 0},
+        timeout=10,
+    )
+    too_large_response = session.post(
+        f"{base_url}/api/v1/wallet/add",
+        headers=user_headers,
+        json={"amount": 100001},
+        timeout=10,
+    )
+
+    assert zero_response.status_code == 400
+    assert too_large_response.status_code == 400
+
+
 def test_review_average_is_decimal_after_adding_new_review(
     session, base_url, user_headers
 ):
     """Average rating should remain a decimal calculation after new reviews."""
-    before = session.get(
-        f"{base_url}/api/v1/products/1/reviews",
-        headers=user_headers,
-        timeout=5,
-    ).json()["average_rating"]
-
     add_response = session.post(
         f"{base_url}/api/v1/products/1/reviews",
         headers=user_headers,
         json={"rating": 5, "comment": f"avg-{uuid.uuid4().hex[:8]}"},
-        timeout=5,
+        timeout=10,
     )
-    after = session.get(
+    after_response = session.get(
         f"{base_url}/api/v1/products/1/reviews",
         headers=user_headers,
-        timeout=5,
-    ).json()["average_rating"]
+        timeout=10,
+    )
+    after_payload = after_response.json()
+    ratings = [review["rating"] for review in after_payload["reviews"]]
+    expected_average = sum(ratings) / len(ratings)
 
     assert add_response.status_code == 200
-    assert isinstance(after, (int, float))
-    assert after >= before
+    assert after_response.status_code == 200
+    assert after_payload["average_rating"] == pytest.approx(expected_average)
 
 
 @pytest.mark.xfail(
