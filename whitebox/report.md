@@ -137,6 +137,11 @@ After fixing the detected errors, I added more white-box tests to cover importan
 - jail-turn branches
 - special tile resolution branches
 - mortgage, auction, and bankruptcy branches
+- play-turn doubles and triple-doubles branches
+- board, player, bank, and card-deck helper behavior
+- failure paths where properties or tiles resolve to missing objects
+
+These additional tests were committed incrementally as `Test 1` through `Test 15`, so the final suite reflects both bug-finding tests and branch-expansion tests.
 
 These tests improved confidence that the corrected code now behaves properly across the main gameplay paths.
 
@@ -151,9 +156,9 @@ PYTHONPATH='whitebox/code/moneypoly' .venv/bin/pytest whitebox/tests -q
 Final result:
 
 ```text
-28 passed in 0.02s
+73 passed in 0.04s
 ```
 
 ### Summary
 
-The white-box testing process found multiple logical issues in movement, winner selection, property transactions, group ownership, jail handling, card-deck edge cases, loan accounting, and trade flow. Each detected error was fixed through a separate small commit, and the final suite now covers a broad set of branches, variable states, and edge cases derived from the control flow graph.
+The white-box testing process found multiple logical issues in movement, winner selection, property transactions, group ownership, jail handling, card-deck edge cases, loan accounting, and trade flow. Each detected error was fixed through a separate small commit, and the final suite now covers a broad set of branches, variable states, helper behaviors, and edge cases derived from the control flow graph. The final submission includes `Error 1` through `Error 11` commits for defect correction and `Test 1` through `Test 15` commits for branch and edge-case expansion.
