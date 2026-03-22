@@ -113,7 +113,10 @@ class Board:
 
     def is_special_tile(self, position):
         """Return True if `position` holds a non-property special tile."""
-        return position in SPECIAL_TILES
+        return (
+            position in SPECIAL_TILES
+            and SPECIAL_TILES[position] != "railroad"
+        )
 
     def properties_owned_by(self, player):
         """Return a list of all properties currently owned by `player`."""

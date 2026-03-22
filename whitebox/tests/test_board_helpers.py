@@ -23,6 +23,7 @@ def test_is_special_tile_distinguishes_special_and_normal_tiles():
     board = Board()
 
     assert board.is_special_tile(7) is True
+    assert board.is_special_tile(5) is False
     assert board.is_special_tile(1) is False
 
 
