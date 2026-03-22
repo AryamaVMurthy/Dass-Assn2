@@ -17,8 +17,9 @@ class Bank:
     def collect(self, amount):
         """
         Receive funds into the bank (taxes, fines, auction proceeds, etc.).
-        Negative amounts are silently ignored.
         """
+        if amount < 0:
+            raise ValueError(f"Cannot collect a negative amount: {amount}")
         self._funds += amount
         self._total_collected += amount
 

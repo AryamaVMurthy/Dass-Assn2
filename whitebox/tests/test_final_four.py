@@ -1,5 +1,7 @@
 """Final white-box coverage cases to round the suite to 73 tests."""
 
+import pytest
+
 from moneypoly.bank import Bank
 from moneypoly.game import Game
 
@@ -50,11 +52,12 @@ def test_handle_property_tile_auction_branch_calls_auction(monkeypatch):
     assert seen == [prop]
 
 
-def test_bank_collect_negative_amount_reduces_reserves_under_current_rules():
-    """Negative collections currently reduce the bank balance."""
+def test_bank_collect_negative_amount_is_rejected():
+    """Negative collections should fail fast instead of mutating bank state."""
     bank = Bank()
     starting_balance = bank.get_balance()
 
-    bank.collect(-50)
+    with pytest.raises(ValueError, match="Cannot collect a negative amount"):
+        bank.collect(-50)
 
-    assert bank.get_balance() == starting_balance - 50
+    assert bank.get_balance() == starting_balance
