@@ -35,3 +35,15 @@ def test_repair_requires_a_mechanic_role():
 
     with pytest.raises(ValueError, match="Mechanic role required"):
         app.garage.repair_vehicle(vehicle.vehicle_id, driver.member_id)
+
+
+def test_repair_rejects_vehicle_that_is_not_damaged():
+    """Healthy vehicles should not be accepted for repair."""
+    app = StreetRaceApp()
+
+    mechanic = app.registration.register_member("Rehan", "rookie")
+    app.crew.assign_role(mechanic.member_id, "mechanic", 7)
+    vehicle = app.inventory.add_vehicle("NSX", "Honda")
+
+    with pytest.raises(ValueError, match="Vehicle is not damaged"):
+        app.garage.repair_vehicle(vehicle.vehicle_id, mechanic.member_id)

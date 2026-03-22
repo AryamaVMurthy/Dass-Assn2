@@ -22,6 +22,8 @@ class GarageService:
         if mechanic.role != "mechanic":
             raise ValueError("Mechanic role required for repairs")
         vehicle = self._inventory.get_vehicle(vehicle_id)
+        if not vehicle.is_damaged:
+            raise ValueError("Vehicle is not damaged")
         vehicle.is_damaged = False
         vehicle.damage_severity = "none"
 
