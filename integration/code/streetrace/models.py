@@ -22,3 +22,43 @@ class Vehicle:
     brand: str
     is_damaged: bool = False
     damage_severity: str = "none"
+
+
+@dataclass
+class Race:
+    """Represents a race and its selected entry."""
+
+    race_id: str
+    name: str
+    prize_money: int
+    driver_id: str | None = None
+    vehicle_id: str | None = None
+    status: str = "planned"
+
+
+@dataclass
+class RaceResult:
+    """Represents the final outcome of a completed race."""
+
+    race_id: str
+    member_id: str
+    position: int
+    prize_money: int
+    damaged: bool
+
+
+@dataclass
+class RankingEntry:
+    """Represents accumulated race points for a crew member."""
+
+    member_id: str
+    points: int
+
+
+@dataclass
+class LedgerEntry:
+    """Represents a money movement in the system."""
+
+    kind: str
+    amount: int
+    description: str
