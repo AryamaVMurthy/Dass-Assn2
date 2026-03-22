@@ -29,6 +29,10 @@ class InventoryService:
             raise ValueError(f"Unknown vehicle: {vehicle_id}")
         return vehicle
 
+    def list_vehicles(self):
+        """Return all tracked vehicles."""
+        return list(self._vehicles.values())
+
     def adjust_cash(self, amount, _reason):
         """Adjust the tracked cash balance."""
         self.cash_balance += amount
