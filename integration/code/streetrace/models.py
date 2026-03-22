@@ -62,3 +62,14 @@ class LedgerEntry:
     kind: str
     amount: int
     description: str
+
+
+@dataclass
+class Mission:
+    """Represents a mission and its crew-role requirements."""
+
+    mission_id: str
+    name: str
+    required_roles: list[str]
+    vehicle_id: str | None = None
+    status: str = "planned"

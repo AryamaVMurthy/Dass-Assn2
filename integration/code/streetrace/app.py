@@ -4,6 +4,7 @@ from streetrace.crew import CrewService
 from streetrace.garage import GarageService
 from streetrace.inventory import InventoryService
 from streetrace.ledger import LedgerService
+from streetrace.missions import MissionPlanningService
 from streetrace.race import RaceService
 from streetrace.registration import RegistrationService
 from streetrace.results import ResultsService
@@ -21,3 +22,4 @@ class StreetRaceApp:
         self.ledger = LedgerService()
         self.race = RaceService(self.registration, self.inventory, self.garage)
         self.results = ResultsService(self.inventory, self.ledger)
+        self.missions = MissionPlanningService(self.crew, self.garage)
