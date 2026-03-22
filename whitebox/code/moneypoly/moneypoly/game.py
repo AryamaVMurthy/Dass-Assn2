@@ -180,11 +180,12 @@ class Game:  # pylint: disable=too-many-instance-attributes
         if prop.owner != player:
             print(f"  {player.name} does not own {prop.name}.")
             return False
-        payout = prop.mortgage()
-        if payout == 0:
+        if prop.is_mortgaged:
             print(f"  {prop.name} is already mortgaged.")
             return False
+        payout = prop.mortgage_value
         player.add_money(self.bank.pay_out(payout))
+        prop.mortgage()
         print(f"  {player.name} mortgaged {prop.name} and received ${payout}.")
         return True
 

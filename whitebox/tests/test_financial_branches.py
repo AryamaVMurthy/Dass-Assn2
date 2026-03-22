@@ -1,5 +1,7 @@
 """White-box tests covering financial and cleanup branches."""
 
+import pytest
+
 from moneypoly.game import Game
 from moneypoly.property import Property
 
@@ -34,6 +36,23 @@ def test_mortgage_property_uses_bank_payout_without_fake_collection():
     assert mortgaged is True
     assert game.bank.get_balance() == starting_funds - prop.mortgage_value
     assert game.bank._total_collected == 0  # pylint: disable=protected-access
+
+
+def test_mortgage_property_leaves_state_unchanged_when_bank_cannot_pay():
+    """A failed mortgage payout should not partially mortgage the property."""
+    game = Game(["Alice", "Bob"])
+    player = game.players[0]
+    prop = Property("Mortgage Avenue", 1, 200, 20)
+    prop.owner = player
+    player.add_property(prop)
+    starting_balance = player.balance
+    game.bank._funds = prop.mortgage_value - 1  # pylint: disable=protected-access
+
+    with pytest.raises(ValueError, match="Bank cannot pay"):
+        game.mortgage_property(player, prop)
+
+    assert prop.is_mortgaged is False
+    assert player.balance == starting_balance
 
 
 def test_auction_property_with_no_bids_keeps_property_unowned(monkeypatch):
