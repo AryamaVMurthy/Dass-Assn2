@@ -31,6 +31,7 @@ class RaceService:
         self._inventory.get_vehicle(vehicle_id)
         if not self._garage.is_vehicle_available(vehicle_id):
             raise ValueError("Vehicle is not available for race entry")
+        self._inventory.reserve_vehicle(vehicle_id)
         race.driver_id = member_id
         race.vehicle_id = vehicle_id
         race.status = "ready"
@@ -42,6 +43,7 @@ class RaceService:
             raise ValueError("Race entry required before completion")
         if damaged:
             self._garage.mark_damaged(race.vehicle_id, "race-damage")
+        self._inventory.release_vehicle(race.vehicle_id)
         race.status = "completed"
         prize_money = race.prize_money if position == 1 else 0
         return RaceResult(

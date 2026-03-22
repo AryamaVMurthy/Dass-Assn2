@@ -22,6 +22,7 @@ class Vehicle:
     brand: str
     is_damaged: bool = False
     damage_severity: str = "none"
+    is_reserved: bool = False
 
 
 @dataclass

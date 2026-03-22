@@ -33,6 +33,20 @@ class InventoryService:
         """Return all tracked vehicles."""
         return list(self._vehicles.values())
 
+    def reserve_vehicle(self, vehicle_id):
+        """Reserve a vehicle for active use."""
+        vehicle = self.get_vehicle(vehicle_id)
+        if vehicle.is_reserved:
+            raise ValueError(f"Vehicle is already reserved: {vehicle_id}")
+        vehicle.is_reserved = True
+        return vehicle
+
+    def release_vehicle(self, vehicle_id):
+        """Release a vehicle from active use."""
+        vehicle = self.get_vehicle(vehicle_id)
+        vehicle.is_reserved = False
+        return vehicle
+
     def adjust_cash(self, amount, _reason):
         """Adjust the tracked cash balance."""
         self.cash_balance += amount

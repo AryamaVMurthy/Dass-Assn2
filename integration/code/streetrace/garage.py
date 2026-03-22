@@ -28,4 +28,4 @@ class GarageService:
     def is_vehicle_available(self, vehicle_id):
         """Return whether a vehicle is available for use."""
         vehicle = self._inventory.get_vehicle(vehicle_id)
-        return not vehicle.is_damaged
+        return not vehicle.is_damaged and not vehicle.is_reserved
