@@ -159,6 +159,21 @@ These areas were chosen because they directly influence game state and can easil
    - Why the test was needed: the assignment expects explicit handling of invalid states, and silent bank overdrafts are a direct financial-model bug.
    - Fix: routed loan issuance through `Bank.pay_out()` so oversized loans fail fast with `ValueError` and no state changes.
 
+18. `Error 18: Keep mortgage transactions atomic on bank failure`
+   - Problem found: mortgage processing set `prop.is_mortgaged = True` before confirming the bank could fund the payout, which left a half-applied transaction when `Bank.pay_out()` failed.
+   - Why the test was needed: money-transfer operations should be atomic, especially when a failed payout would otherwise mutate game state without compensating the player.
+   - Fix: moved the bank payout check ahead of the mortgage-state mutation so the property remains unchanged if the bank cannot pay.
+
+19. `Error 19: Reject negative bank collections`
+   - Problem found: `Bank.collect(-amount)` reduced both reserves and `total_collected`, which contradicted the method contract and silently corrupted bank accounting.
+   - Why the test was needed: negative collection is an invalid financial input and should not silently mutate internal state.
+   - Fix: changed `Bank.collect()` to fail fast with `ValueError` for negative amounts.
+
+20. `Error 20: Exclude railroads from special-tile helper`
+   - Problem found: `Board.is_special_tile()` returned `True` for railroad squares even though the helper’s docstring described only non-property special tiles.
+   - Why the test was needed: helper semantics matter for white-box reasoning and should match the documented meaning of the method.
+   - Fix: narrowed `is_special_tile()` so it excludes railroads while still returning `True` for real special tiles such as chance, jail, and taxes.
+
 ### Additional Branch Coverage Added
 
 After fixing the detected errors, I added more white-box tests to cover important branches that already behaved correctly:
@@ -186,9 +201,9 @@ PYTHONPATH='whitebox/code/moneypoly' .venv/bin/pytest whitebox/tests -q
 Final result:
 
 ```text
-83 passed in 0.05s
+84 passed in 0.05s
 ```
 
 ### Summary
 
-The white-box testing process found multiple logical issues in movement, winner selection, setup validation, turn-order handling after bankruptcy, property transactions, group ownership, jail handling, card-deck edge cases, bank accounting, and trade flow. Each detected error was fixed through a separate small commit, and the final suite now covers a broad set of branches, variable states, helper behaviors, and edge cases derived from the control flow graph. The final submission now includes `Error 1` through `Error 17` commits for defect correction and `Test 1` through `Test 15` commits for branch and edge-case expansion.
+The white-box testing process found multiple logical issues in movement, winner selection, setup validation, turn-order handling after bankruptcy, property transactions, helper semantics, jail handling, card-deck edge cases, bank accounting, and trade flow. Each detected error was fixed through a separate small commit, and the final suite now covers a broad set of branches, variable states, helper behaviors, and edge cases derived from the control flow graph. The final submission now includes `Error 1` through `Error 20` commits for defect correction and `Test 1` through `Test 15` commits for branch and edge-case expansion.
