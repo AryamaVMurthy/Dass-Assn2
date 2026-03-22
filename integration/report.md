@@ -64,11 +64,15 @@ The system enforces the following integration rules:
 - A crew member must be registered before a role can be assigned.
 - Only crew members with the `driver` role may be entered into a race.
 - A race entry requires a valid and available vehicle.
+- A vehicle already reserved for one race cannot be entered into another until the first race completes.
+- Completed races are terminal and cannot be re-entered or completed again.
 - If a car is damaged, it cannot be used again until it is repaired.
 - Repairs require a crew member with the `mechanic` role.
+- Healthy vehicles cannot be “repaired” as a no-op.
 - Race results update rankings and the Inventory cash balance.
 - Prize payouts are recorded in the Ledger.
 - Missions cannot start if required roles are unavailable.
+- Repeated required roles must be backed by enough matching crew members.
 - Missions that depend on a vehicle cannot start if that vehicle is damaged.
 
 These rules are implemented in code and verified using integration tests.
@@ -194,9 +198,64 @@ The important inter-module flows to show are:
 - Actual result: worked as expected.
 - Why needed: this verifies that the CLI-facing orchestration layer is correctly connected to the underlying modules.
 
+### Test Case 13: Interactive CLI session supports a full end-to-end workflow
+- Scenario: use one CLI session to register a member, assign a role, add a vehicle, create and complete a race, and then request a summary.
+- Modules involved: CLI, App facade, Registration, Crew Management, Inventory, Race Management, Results.
+- Expected result: the command-line session should preserve in-memory state and complete the workflow in one process.
+- Actual result: worked as expected after adding the interactive session loop.
+- Why needed: this fixes the earlier one-shot CLI limitation and proves the submitted terminal interface can actually drive the system.
+
+### Test Case 14: Prevent double-booking the same vehicle into multiple races
+- Scenario: enter one vehicle into a race and then attempt to enter the same vehicle into a second race before the first completes.
+- Modules involved: Inventory, Garage, Race Management.
+- Expected result: the second entry should fail until the first race completes and releases the vehicle.
+- Actual result: worked as expected after adding explicit reservation state.
+- Why needed: this checks the assignment rule that only available vehicles may be used.
+
+### Test Case 15: Completed races are terminal
+- Scenario: complete a race and then try to enter it again or complete it a second time.
+- Modules involved: Race Management, Results.
+- Expected result: both operations should fail with explicit errors.
+- Actual result: worked as expected after adding race-state guards.
+- Why needed: this prevents duplicate payouts and duplicate ranking updates.
+
+### Test Case 16: Reject repairs for healthy vehicles
+- Scenario: try to repair a vehicle that was never damaged.
+- Modules involved: Garage, Inventory.
+- Expected result: the repair should fail with an explicit error.
+- Actual result: worked as expected after adding the damage-state guard.
+- Why needed: this prevents silent no-op repair workflows.
+
+### Test Case 17: Mission role validation counts duplicate requirements
+- Scenario: create a mission that requires two drivers but register only one.
+- Modules involved: Mission Planning, Crew Management, Registration.
+- Expected result: mission start should fail because the crew roster does not satisfy both driver slots.
+- Actual result: worked as expected after changing validation from role presence to counted role slots.
+- Why needed: this verifies that repeated role requirements are enforced correctly.
+
 ## 2.5 Errors Or Issues Found
 
-No post-implementation logical bugs remained in the final verified version. The integration section was built incrementally using test-first slices, so each missing or incorrect behavior was identified immediately by a failing test and then implemented before moving forward.
+The integration section was built incrementally using test-first slices, and the following concrete issues were found and fixed:
+
+1. `Error 1: Add interactive CLI session for end-to-end workflows`
+   - Problem found: the CLI used one-shot subcommands only, so state was lost between invocations and the terminal interface could not drive the full workflow in one process.
+   - Fix: added an interactive session loop with command handlers for registration, role assignment, races, missions, repairs, and summaries.
+
+2. `Error 2: Prevent vehicles from being double-booked`
+   - Problem found: the same vehicle could be entered into multiple races simultaneously because availability only checked damage, not reservation state.
+   - Fix: added reservation state to vehicles and reserve/release behavior in inventory and race handling.
+
+3. `Error 3: Make completed races terminal`
+   - Problem found: completed races could be re-entered and completed again, causing repeated prize payouts and ranking updates.
+   - Fix: enforced the race lifecycle so only `planned` races accept entries and only `ready` races can be completed.
+
+4. `Error 4: Reject repairs for healthy vehicles`
+   - Problem found: garage repairs silently succeeded even when the vehicle was not damaged.
+   - Fix: added an explicit guard that rejects no-op repairs.
+
+5. `Error 5: Count duplicate role requirements in missions`
+   - Problem found: mission validation only checked role presence, so one driver incorrectly satisfied `['driver', 'driver']`.
+   - Fix: switched mission validation to counted role slots using role-frequency checks.
 
 The only repository-level issue encountered during development was accidental generation of Python cache files under `integration/`. Those generated files were removed and not left as part of the intended submission content.
 
@@ -211,7 +270,7 @@ PYTHONPATH='integration/code' .venv/bin/pytest integration/tests -q
 Final result:
 
 ```text
-12 passed in 0.01s
+17 passed in 0.02s
 ```
 
 Manual CLI verification was also performed with:
@@ -228,4 +287,4 @@ This produced a valid JSON summary showing:
 
 ## 2.7 Summary
 
-The final StreetRace Manager system satisfies the required module list, includes two extra modules, and enforces the main business rules through module interaction rather than isolated logic. The integration tests cover both success flows and failure flows, including race entry validation, vehicle damage and repair, prize-money updates, rankings, and mission start validation.
+The final StreetRace Manager system satisfies the required module list, includes two extra modules, and enforces the main business rules through module interaction rather than isolated logic. The integration tests now cover both success flows and failure flows, including the interactive CLI workflow, race entry validation, vehicle reservation and release, vehicle damage and repair, prize-money updates, rankings, and mission role validation.
