@@ -50,6 +50,8 @@ class Game:  # pylint: disable=too-many-instance-attributes
 
         if player.in_jail:
             self._handle_jail_turn(player)
+            if self._end_turn_if_player_eliminated(player):
+                return
             self.advance_turn()
             return
 
@@ -64,6 +66,8 @@ class Game:  # pylint: disable=too-many-instance-attributes
             return
 
         self._move_and_resolve(player, roll)
+        if self._end_turn_if_player_eliminated(player):
+            return
 
         # Rolling doubles earns an extra turn
         if self.dice.is_doubles():
@@ -71,6 +75,13 @@ class Game:  # pylint: disable=too-many-instance-attributes
             return
 
         self.advance_turn()
+
+    def _end_turn_if_player_eliminated(self, player):
+        """Finalize a turn immediately if the active player was eliminated."""
+        if player in self.players:
+            return False
+        self.turn_number += 1
+        return True
 
     def _move_and_resolve(self, player, steps):
         """Move `player` by `steps` and trigger whatever tile they land on."""
@@ -376,8 +387,11 @@ class Game:  # pylint: disable=too-many-instance-attributes
                 prop.is_mortgaged = False
             player.properties.clear()
             if player in self.players:
+                removed_index = self.players.index(player)
                 self.players.remove(player)
-            if self.current_index >= len(self.players):
+                if removed_index < self.current_index:
+                    self.current_index -= 1
+            if self.players and self.current_index >= len(self.players):
                 self.current_index = 0
 
     def find_winner(self):
