@@ -20,6 +20,22 @@ def test_mortgage_property_credits_player_and_marks_property():
     assert player.balance == starting_balance + prop.mortgage_value
 
 
+def test_mortgage_property_uses_bank_payout_without_fake_collection():
+    """Mortgage payouts should not reduce the bank's collection totals."""
+    game = Game(["Alice", "Bob"])
+    player = game.players[0]
+    prop = Property("Mortgage Avenue", 1, 200, 20)
+    prop.owner = player
+    player.add_property(prop)
+    starting_funds = game.bank.get_balance()
+
+    mortgaged = game.mortgage_property(player, prop)
+
+    assert mortgaged is True
+    assert game.bank.get_balance() == starting_funds - prop.mortgage_value
+    assert game.bank._total_collected == 0  # pylint: disable=protected-access
+
+
 def test_auction_property_with_no_bids_keeps_property_unowned(monkeypatch):
     """If every player passes, the auction should leave the property unowned."""
     game = Game(["Alice", "Bob"])
