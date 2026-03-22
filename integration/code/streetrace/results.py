@@ -15,7 +15,8 @@ class ResultsService:
     def record_result(self, race_result):
         """Apply a race result to rankings and prize accounting."""
         self._rankings[race_result.member_id] = (
-            self._rankings.get(race_result.member_id, 0) + self._points_for_position(race_result.position)
+            self._rankings.get(race_result.member_id, 0)
+            + self._points_for_position(race_result.position)
         )
         if race_result.prize_money > 0:
             self._inventory.adjust_cash(
