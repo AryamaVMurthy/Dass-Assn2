@@ -321,3 +321,30 @@ def test_support_ticket_list_includes_created_ticket(session, base_url, user_hea
     assert create.status_code == 200
     assert list_response.status_code == 200
     assert any(ticket["subject"] == subject for ticket in list_response.json())
+
+
+def test_coupon_remove_endpoint_returns_success_message(
+    session, base_url, user_headers, clean_cart
+):
+    """Coupon remove should respond successfully even when clearing current coupon state."""
+    session.post(
+        f"{base_url}/api/v1/cart/add",
+        headers=user_headers,
+        json={"product_id": 42, "quantity": 20},
+        timeout=10,
+    )
+    session.post(
+        f"{base_url}/api/v1/coupon/apply",
+        headers=user_headers,
+        json={"coupon_code": "BIGDEAL500"},
+        timeout=10,
+    )
+
+    response = session.post(
+        f"{base_url}/api/v1/coupon/remove",
+        headers=user_headers,
+        timeout=10,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["message"] == "Coupon removed successfully"
