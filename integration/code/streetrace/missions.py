@@ -1,5 +1,7 @@
 """Mission planning service for StreetRace Manager."""
 
+from collections import Counter
+
 from streetrace.models import Mission
 
 
@@ -37,9 +39,16 @@ class MissionPlanningService:
 
     def validate_required_roles(self, required_roles):
         """Ensure all required roles exist in the crew roster."""
-        for role in required_roles:
-            if not self._crew.role_available(role):
-                raise ValueError(f"Missing required role: {role}")
+        required_counts = Counter(required_roles)
+        missing_roles = []
+        for role, required_count in required_counts.items():
+            available_count = len(self._crew.get_members_by_role(role))
+            if available_count < required_count:
+                missing_roles.append(f"{role} x{required_count}")
+        if missing_roles:
+            raise ValueError(
+                f"Missing required role slots: {', '.join(missing_roles)}"
+            )
         return True
 
     def _get_mission(self, mission_id):

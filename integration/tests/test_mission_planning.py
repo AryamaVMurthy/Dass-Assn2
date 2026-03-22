@@ -12,7 +12,9 @@ def test_mission_cannot_start_when_required_role_is_unavailable():
     app.registration.register_member("Tara", "rookie")
     mission = app.missions.create_mission("Night Delivery", ["driver", "mechanic"])
 
-    with pytest.raises(ValueError, match="Missing required role: driver"):
+    with pytest.raises(
+        ValueError, match="Missing required role slots: driver x1, mechanic x1"
+    ):
         app.missions.start_mission(mission.mission_id)
 
 
@@ -42,3 +44,15 @@ def test_damaged_vehicle_blocks_mission_until_mechanic_repairs_it():
     started = app.missions.start_mission(mission.mission_id)
 
     assert started.status == "active"
+
+
+def test_mission_requires_enough_people_for_duplicate_role_requirements():
+    """Repeated role requirements should require multiple matching crew members."""
+    app = StreetRaceApp()
+
+    driver = app.registration.register_member("Nia", "rookie")
+    app.crew.assign_role(driver.member_id, "driver", 8)
+    mission = app.missions.create_mission("Twin Driver Run", ["driver", "driver"])
+
+    with pytest.raises(ValueError, match="Missing required role slots: driver x2"):
+        app.missions.start_mission(mission.mission_id)
