@@ -103,6 +103,65 @@ def test_delete_missing_address_returns_404(session, base_url, user_headers):
     assert response.status_code == 404
 
 
+def test_new_default_address_replaces_previous_default(session, base_url, user_headers):
+    """Only one address should remain default after adding a new default address."""
+    first_payload = {
+        "label": "HOME",
+        "street": _unique_street(),
+        "city": "Delhi",
+        "pincode": "123456",
+        "is_default": True,
+    }
+    second_payload = {
+        "label": "OFFICE",
+        "street": _unique_street(),
+        "city": "Delhi",
+        "pincode": "654321",
+        "is_default": True,
+    }
+    first = session.post(
+        f"{base_url}/api/v1/addresses",
+        headers=user_headers,
+        json=first_payload,
+        timeout=10,
+    ).json()["address"]
+    second = session.post(
+        f"{base_url}/api/v1/addresses",
+        headers=user_headers,
+        json=second_payload,
+        timeout=10,
+    ).json()["address"]
+
+    try:
+        addresses = session.get(
+            f"{base_url}/api/v1/addresses",
+            headers=user_headers,
+            timeout=10,
+        ).json()
+        tracked = [
+            address
+            for address in addresses
+            if address["address_id"] in {first["address_id"], second["address_id"]}
+        ]
+
+        assert sum(1 for address in tracked if address["is_default"]) == 1
+        assert any(
+            address["address_id"] == second["address_id"] and address["is_default"]
+            for address in tracked
+        )
+    finally:
+        session.delete(
+            f"{base_url}/api/v1/addresses/{first['address_id']}",
+            headers=user_headers,
+            timeout=10,
+        )
+        session.delete(
+            f"{base_url}/api/v1/addresses/{second['address_id']}",
+            headers=user_headers,
+            timeout=10,
+        )
+
+
 @pytest.mark.xfail(
     strict=True,
     reason="BUG: address update response returns old data instead of updated data",

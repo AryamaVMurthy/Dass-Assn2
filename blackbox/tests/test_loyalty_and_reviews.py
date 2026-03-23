@@ -59,6 +59,24 @@ def test_wallet_rejects_invalid_top_up_amounts(session, base_url, user_headers):
     assert too_large_response.status_code == 400
 
 
+def test_wallet_pay_rejects_insufficient_balance(session, base_url, user_headers):
+    """Wallet payments above the available balance should fail."""
+    balance = session.get(
+        f"{base_url}/api/v1/wallet",
+        headers=user_headers,
+        timeout=10,
+    ).json()["wallet_balance"]
+    response = session.post(
+        f"{base_url}/api/v1/wallet/pay",
+        headers=user_headers,
+        json={"amount": balance + 100000},
+        timeout=10,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "Insufficient balance"
+
+
 def test_review_average_is_decimal_after_adding_new_review(
     session, base_url, user_headers
 ):

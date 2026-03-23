@@ -172,6 +172,43 @@ def test_checkout_rejects_invalid_payment_method(
     assert response.json()["error"] == "Invalid payment method"
 
 
+def test_checkout_cod_and_wallet_start_with_pending_payment_status(
+    session, base_url, user_headers, clean_cart
+):
+    """COD and WALLET checkouts should start with PENDING payment status."""
+    session.post(
+        f"{base_url}/api/v1/cart/add",
+        headers=user_headers,
+        json={"product_id": 1, "quantity": 1},
+        timeout=10,
+    )
+    cod_response = session.post(
+        f"{base_url}/api/v1/checkout",
+        headers=user_headers,
+        json={"payment_method": "COD"},
+        timeout=10,
+    )
+
+    session.delete(f"{base_url}/api/v1/cart/clear", headers=user_headers, timeout=10)
+    session.post(
+        f"{base_url}/api/v1/cart/add",
+        headers=user_headers,
+        json={"product_id": 1, "quantity": 1},
+        timeout=10,
+    )
+    wallet_response = session.post(
+        f"{base_url}/api/v1/checkout",
+        headers=user_headers,
+        json={"payment_method": "WALLET"},
+        timeout=10,
+    )
+
+    assert cod_response.status_code == 200
+    assert cod_response.json()["payment_status"] == "PENDING"
+    assert wallet_response.status_code == 200
+    assert wallet_response.json()["payment_status"] == "PENDING"
+
+
 def test_checkout_rejects_cod_above_5000(session, base_url, user_headers, clean_cart):
     """COD should be rejected for totals above 5000."""
     session.post(
@@ -236,6 +273,28 @@ def test_cancel_missing_order_returns_404(session, base_url, user_headers):
 
     assert response.status_code == 404
     assert response.json()["error"] == "Order not found"
+
+
+def test_coupon_rejects_cart_value_below_minimum(
+    session, base_url, user_headers, clean_cart
+):
+    """Coupons should be rejected when the cart total is below the minimum value."""
+    session.post(
+        f"{base_url}/api/v1/cart/add",
+        headers=user_headers,
+        json={"product_id": 1, "quantity": 1},
+        timeout=10,
+    )
+
+    response = session.post(
+        f"{base_url}/api/v1/coupon/apply",
+        headers=user_headers,
+        json={"coupon_code": "BIGDEAL500"},
+        timeout=10,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "Cart value below minimum"
 
 
 @pytest.mark.xfail(
@@ -321,6 +380,29 @@ def test_support_ticket_list_includes_created_ticket(session, base_url, user_hea
     assert create.status_code == 200
     assert list_response.status_code == 200
     assert any(ticket["subject"] == subject for ticket in list_response.json())
+
+
+def test_support_ticket_rejects_invalid_subject_and_message_lengths(
+    session, base_url, user_headers
+):
+    """Support ticket creation should enforce subject and message length rules."""
+    short_subject = session.post(
+        f"{base_url}/api/v1/support/ticket",
+        headers=user_headers,
+        json={"subject": "hey", "message": "hello"},
+        timeout=10,
+    )
+    long_message = session.post(
+        f"{base_url}/api/v1/support/ticket",
+        headers=user_headers,
+        json={"subject": "Valid Subject", "message": "x" * 501},
+        timeout=10,
+    )
+
+    assert short_subject.status_code == 400
+    assert short_subject.json()["error"] == "Subject must be between 5 and 100 characters"
+    assert long_message.status_code == 400
+    assert long_message.json()["error"] == "Message must be between 1 and 500 characters"
 
 
 def test_coupon_remove_endpoint_returns_success_message(
