@@ -36,3 +36,15 @@ def user_headers(roll_headers):
     headers = dict(roll_headers)
     headers["X-User-ID"] = "1"
     return headers
+
+
+@pytest.fixture
+def admin_products_by_id(session, base_url, roll_headers):
+    """Return the current admin product snapshot keyed by product id."""
+    response = session.get(
+        f"{base_url}/api/v1/admin/products",
+        headers=roll_headers,
+        timeout=10,
+    )
+    response.raise_for_status()
+    return {product["product_id"]: product for product in response.json()}
