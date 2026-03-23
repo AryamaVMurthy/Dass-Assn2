@@ -1,5 +1,11 @@
 # White Box Report
 
+## 1.1 Control Flow Graph
+
+For the control flow graph, I modeled the principal execution path of the MoneyPoly program. The graph starts from `main()`, where player names are collected and the `Game` object is created, and then follows the main gameplay flow through `Game.run()`, `play_turn()`, and `_move_and_resolve()`. I expanded `_handle_jail_turn()`, `_apply_card()`, and `_handle_property_tile()` because these functions contain the most important decision points, branch paths, and state changes in the program. To keep the handwritten CFG readable, sequential statements were grouped into related blocks and repeated post-branch flows were merged into common nodes while preserving the actual control structure of the program. The attached hand-drawn diagram was created from the actual code and includes clearly labeled nodes and arrows to show the flow of control.
+
+![Handwritten MoneyPoly control flow graph](diagrams/moneypoly_cfg_handwritten.jpg)
+
 ## 1.2 Code Quality Analysis
 
 For this part, I used `pylint` to analyze the copied MoneyPoly code placed under `whitebox/code/moneypoly/`. I performed the cleanup iteratively and recorded each atomic step as a separate commit, as required in the assignment. The goal was to improve code quality without changing the intended gameplay behavior unless a refactor was necessary for maintainability.
