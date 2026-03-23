@@ -31,6 +31,10 @@ class MissionPlanningService:
     def start_mission(self, mission_id):
         """Start a mission if all role and vehicle checks pass."""
         mission = self._get_mission(mission_id)
+        if mission.status == "active":
+            raise ValueError("Mission is already active")
+        if mission.status != "planned":
+            raise ValueError(f"Mission cannot start while {mission.status}")
         self.validate_required_roles(mission.required_roles)
         if mission.vehicle_id and not self._garage.is_vehicle_available(mission.vehicle_id):
             raise ValueError("Vehicle is damaged and unavailable for mission")

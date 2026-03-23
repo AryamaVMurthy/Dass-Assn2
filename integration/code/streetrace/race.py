@@ -32,6 +32,8 @@ class RaceService:
         member = self._registration.get_member(member_id)
         if member.role != "driver":
             raise ValueError("Driver role required for race entry")
+        if self._driver_has_active_race(member_id):
+            raise ValueError("Driver is already entered in another active race")
         self._inventory.get_vehicle(vehicle_id)
         if not self._garage.is_vehicle_available(vehicle_id):
             raise ValueError("Vehicle is not available for race entry")
@@ -49,6 +51,8 @@ class RaceService:
             raise ValueError("Race must be ready before completion")
         if race.driver_id is None or race.vehicle_id is None:
             raise ValueError("Race entry required before completion")
+        if position < 1:
+            raise ValueError("Position must be at least 1")
         if damaged:
             self._garage.mark_damaged(race.vehicle_id, "race-damage")
         self._inventory.release_vehicle(race.vehicle_id)
@@ -68,3 +72,10 @@ class RaceService:
         if race is None:
             raise ValueError(f"Unknown race: {race_id}")
         return race
+
+    def _driver_has_active_race(self, member_id):
+        """Return whether a driver is already committed to a ready race."""
+        return any(
+            race.driver_id == member_id and race.status == "ready"
+            for race in self._races.values()
+        )

@@ -56,3 +56,19 @@ def test_mission_requires_enough_people_for_duplicate_role_requirements():
 
     with pytest.raises(ValueError, match="Missing required role slots: driver x2"):
         app.missions.start_mission(mission.mission_id)
+
+
+def test_active_mission_cannot_be_started_again():
+    """Mission start should reject repeated activation of the same mission."""
+    app = StreetRaceApp()
+
+    driver = app.registration.register_member("Reva", "rookie")
+    app.crew.assign_role(driver.member_id, "driver", 8)
+    mission = app.missions.create_mission("One Shot Delivery", ["driver"])
+
+    started = app.missions.start_mission(mission.mission_id)
+
+    with pytest.raises(ValueError, match="Mission is already active"):
+        app.missions.start_mission(mission.mission_id)
+
+    assert started.status == "active"

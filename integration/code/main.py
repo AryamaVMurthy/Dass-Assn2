@@ -112,7 +112,10 @@ def _session_complete_race(app, args, output_func):
     """Handle a complete-race command within the interactive CLI."""
     if len(args) != 3:
         raise ValueError("Usage: complete-race <race_id> <position> <damaged>")
-    damaged = args[2].lower() == "true"
+    lowered = args[2].lower()
+    if lowered not in {"true", "false"}:
+        raise ValueError("Damaged must be true or false")
+    damaged = lowered == "true"
     result = app.complete_race(args[0], int(args[1]), damaged)
     output_func(json.dumps(result.__dict__, indent=2))
 
