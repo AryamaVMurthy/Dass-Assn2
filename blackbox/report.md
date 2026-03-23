@@ -4,7 +4,7 @@
 
 For Part 3, I performed black-box testing on the QuickCart REST API using only the provided documentation and the running server. I did not rely on internal implementation details. All tests were written with `pytest` and `requests` under `blackbox/tests/`.
 
-The API was run locally on `http://127.0.0.1:8080` from the provided Docker image. The tests were designed directly from the API documentation, especially the documented validation rules, status codes, and expected response structures.
+The API was run locally on `http://127.0.0.1:8080` from the provided Docker image. The tests were designed directly from the API documentation, especially the documented validation rules, status codes, and expected response structures. For data-dependent checks such as product prices, I used the admin inspection endpoints as the live database oracle instead of hardcoded assumptions.
 
 ## 3.1 Test Design Approach
 
@@ -55,11 +55,13 @@ The final automated test suite includes:
 - valid address creation returns the created address object
 - created address can be deleted successfully
 - deleting a missing address returns `404`
+- adding a new default address clears the previous default
 - address update response should return new data
 
 ### Products and Cart
 - product list supports category filtering
 - product list supports price sorting
+- product list prices should match the admin DB snapshot
 - product search filters by name fragment
 - unknown product detail returns `404`
 - adding a non-existent product returns `404`
@@ -73,18 +75,22 @@ The final automated test suite includes:
 ### Wallet, Checkout, Orders, Coupons, Support
 - wallet GET returns the current balance field
 - wallet top-up rejects zero and above-limit amounts
+- wallet pay rejects insufficient balance
 - wallet top-up and payment should change balance by the exact requested amount
 - checkout should reject an empty cart
 - invalid payment methods should be rejected
+- COD and WALLET checkout start with `PENDING` payment status
 - CARD checkout should create a `PAID` order
 - checkout invoice should satisfy `subtotal + GST = total`
 - COD above `5000` should be rejected
 - orders list and detail should include a newly created order
 - cancelling a missing order should return `404`
 - expired coupons should be rejected
+- coupon minimum cart value is enforced
 - coupon remove endpoint should return success
 - support tickets should start as `OPEN`
 - support ticket list should include newly created tickets
+- support ticket subject and message length limits are enforced
 - support ticket status should only move forward
 
 ### Loyalty and Reviews
@@ -106,7 +112,7 @@ The complete suite was run with:
 Final result:
 
 ```text
-35 passed, 8 xfailed in 0.76s
+40 passed, 9 xfailed in 0.94s
 ```
 
 The expected failures correspond to actual API defects confirmed against the documentation.
@@ -227,6 +233,19 @@ The expected failures correspond to actual API defects confirmed against the doc
 - Why it is a bug:
   - the documentation explicitly says the cart must not be empty during checkout
 
+### Bug 9: Product list price does not match the admin DB snapshot
+- Endpoint: `GET /api/v1/products`
+- Request:
+  - Method: `GET`
+  - URL: `/api/v1/products?sort=price_asc`
+  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+- Expected result:
+  - every user-facing product price should match the latest price returned by `GET /api/v1/admin/products`
+- Actual result:
+  - at least one product differs; for example product `27` (`Coriander - 100g`) returned price `20` in the user list while the admin DB snapshot returned `15`
+- Why it is a bug:
+  - the documentation says the product price shown to users must be the exact real price stored in the database
+
 ## 3.6 Summary
 
-The black-box suite now covers the major documented endpoint groups of the QuickCart API and identifies eight reproducible API defects. The tests are executable, isolated enough for repeated runs, and use strict expected-failure markers for the documented bugs so the suite remains useful while still exposing contract violations.
+The black-box suite now covers the major documented endpoint groups of the QuickCart API and identifies nine reproducible API defects. The tests are executable, isolated enough for repeated runs, and use strict expected-failure markers for the documented bugs so the suite remains useful while still exposing contract violations.
