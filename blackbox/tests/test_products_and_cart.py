@@ -90,6 +90,22 @@ def test_cart_add_rejects_zero_quantity(session, base_url, user_headers, clean_c
 
 @pytest.mark.xfail(
     strict=True,
+    reason="BUG: cart add accepts negative quantities instead of rejecting them",
+)
+def test_cart_add_rejects_negative_quantity(session, base_url, user_headers, clean_cart):
+    """Negative cart quantities should be rejected with a 400 error."""
+    response = session.post(
+        f"{base_url}/api/v1/cart/add",
+        headers=user_headers,
+        json={"product_id": 1, "quantity": -1},
+        timeout=5,
+    )
+
+    assert response.status_code == 400
+
+
+@pytest.mark.xfail(
+    strict=True,
     reason="BUG: cart item subtotal does not equal quantity times unit price",
 )
 def test_cart_item_subtotal_matches_quantity_times_unit_price(

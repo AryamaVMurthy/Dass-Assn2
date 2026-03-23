@@ -275,6 +275,55 @@ def test_cancel_missing_order_returns_404(session, base_url, user_headers):
     assert response.json()["error"] == "Order not found"
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="BUG: cancelling an order does not restore product stock",
+)
+def test_cancelling_order_restores_product_stock(
+    session, base_url, user_headers, roll_headers, clean_cart
+):
+    """Cancelling an order should add its item quantities back into stock."""
+    products_before = session.get(
+        f"{base_url}/api/v1/admin/products",
+        headers=roll_headers,
+        timeout=10,
+    ).json()
+    stock_before = {
+        product["product_id"]: product["stock_quantity"] for product in products_before
+    }
+
+    session.post(
+        f"{base_url}/api/v1/cart/add",
+        headers=user_headers,
+        json={"product_id": 1, "quantity": 1},
+        timeout=10,
+    )
+    checkout = session.post(
+        f"{base_url}/api/v1/checkout",
+        headers=user_headers,
+        json={"payment_method": "CARD"},
+        timeout=10,
+    )
+    order_id = checkout.json()["order_id"]
+
+    cancel = session.post(
+        f"{base_url}/api/v1/orders/{order_id}/cancel",
+        headers=user_headers,
+        timeout=10,
+    )
+    products_after = session.get(
+        f"{base_url}/api/v1/admin/products",
+        headers=roll_headers,
+        timeout=10,
+    ).json()
+    stock_after = {
+        product["product_id"]: product["stock_quantity"] for product in products_after
+    }
+
+    assert cancel.status_code == 200
+    assert stock_after[1] == stock_before[1]
+
+
 def test_coupon_rejects_cart_value_below_minimum(
     session, base_url, user_headers, clean_cart
 ):

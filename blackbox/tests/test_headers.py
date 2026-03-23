@@ -1,5 +1,7 @@
 """Smoke tests for required QuickCart headers."""
 
+import pytest
+
 
 def test_admin_endpoint_requires_roll_number_header(session, base_url):
     """Admin endpoints should reject requests without X-Roll-Number."""
@@ -31,3 +33,18 @@ def test_user_endpoint_requires_user_id_header(session, base_url, roll_headers):
 
     assert response.status_code == 400
     assert response.json()["error"] == "Missing X-User-ID header"
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="BUG: non-existent X-User-ID returns 404 instead of the documented 400",
+)
+def test_user_endpoint_rejects_non_existent_user_id_with_400(session, base_url):
+    """User-scoped endpoints should treat unknown user IDs as invalid headers."""
+    response = session.get(
+        f"{base_url}/api/v1/profile",
+        headers={"X-Roll-Number": "1", "X-User-ID": "999999"},
+        timeout=5,
+    )
+
+    assert response.status_code == 400

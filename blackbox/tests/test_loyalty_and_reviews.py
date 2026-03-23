@@ -115,3 +115,19 @@ def test_review_rejects_rating_below_one(session, base_url, user_headers):
     )
 
     assert response.status_code == 400
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="BUG: reviews endpoint accepts ratings above 5 instead of rejecting them",
+)
+def test_review_rejects_rating_above_five(session, base_url, user_headers):
+    """Ratings above 5 should be rejected with a 400 error."""
+    response = session.post(
+        f"{base_url}/api/v1/products/1/reviews",
+        headers=user_headers,
+        json={"rating": 6, "comment": "too high"},
+        timeout=5,
+    )
+
+    assert response.status_code == 400

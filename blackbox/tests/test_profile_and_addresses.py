@@ -35,6 +35,24 @@ def test_profile_update_rejects_invalid_phone(session, base_url, user_headers):
     assert response.json()["error"] == "Phone must be exactly 10 digits"
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="BUG: profile update accepts 10-character phone values containing letters",
+)
+def test_profile_update_rejects_phone_with_non_digit_characters(
+    session, base_url, user_headers
+):
+    """Profile update should reject phone values that are not all digits."""
+    response = session.put(
+        f"{base_url}/api/v1/profile",
+        headers=user_headers,
+        json={"name": "Valid Name", "phone": "12345abcde"},
+        timeout=5,
+    )
+
+    assert response.status_code == 400
+
+
 def test_profile_get_returns_current_user_payload(session, base_url, user_headers):
     """Profile GET should return the current user's profile payload."""
     response = session.get(
@@ -201,3 +219,25 @@ def test_address_update_response_should_show_new_data(session, base_url, user_he
             headers=user_headers,
             timeout=5,
         )
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="BUG: address creation accepts pincodes that are not six digits",
+)
+def test_address_create_rejects_non_digit_pincode(session, base_url, user_headers):
+    """Address creation should reject pincodes containing non-digit characters."""
+    response = session.post(
+        f"{base_url}/api/v1/addresses",
+        headers=user_headers,
+        json={
+            "label": "HOME",
+            "street": _unique_street(),
+            "city": "Delhi",
+            "pincode": "12AB56",
+            "is_default": False,
+        },
+        timeout=5,
+    )
+
+    assert response.status_code == 400
