@@ -275,6 +275,27 @@ def test_cancel_missing_order_returns_404(session, base_url, user_headers):
     assert response.json()["error"] == "Order not found"
 
 
+def test_delivered_order_cannot_be_cancelled(session, base_url, user_headers):
+    """Delivered orders should reject cancellation attempts."""
+    orders = session.get(
+        f"{base_url}/api/v1/orders",
+        headers=user_headers,
+        timeout=10,
+    ).json()
+    delivered_order = next(
+        order for order in orders if order["order_status"] == "DELIVERED"
+    )
+
+    response = session.post(
+        f"{base_url}/api/v1/orders/{delivered_order['order_id']}/cancel",
+        headers=user_headers,
+        timeout=10,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "Cannot cancel delivered order"
+
+
 @pytest.mark.xfail(
     strict=True,
     reason="BUG: cancelling an order does not restore product stock",

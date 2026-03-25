@@ -121,6 +121,56 @@ def test_delete_missing_address_returns_404(session, base_url, user_headers):
     assert response.status_code == 404
 
 
+@pytest.mark.parametrize(
+    ("payload", "expected_error"),
+    [
+        (
+            {
+                "label": "HOME2",
+                "street": _unique_street(),
+                "city": "Delhi",
+                "pincode": "123456",
+                "is_default": False,
+            },
+            "Label must be HOME, OFFICE, or OTHER",
+        ),
+        (
+            {
+                "label": "HOME",
+                "street": "1234",
+                "city": "Delhi",
+                "pincode": "123456",
+                "is_default": False,
+            },
+            "Street must be between 5 and 100 characters",
+        ),
+        (
+            {
+                "label": "HOME",
+                "street": _unique_street(),
+                "city": "D",
+                "pincode": "123456",
+                "is_default": False,
+            },
+            "City must be between 2 and 50 characters",
+        ),
+    ],
+)
+def test_address_create_rejects_invalid_label_street_and_city_values(
+    session, base_url, user_headers, payload, expected_error
+):
+    """Address creation should enforce label, street, and city validation rules."""
+    response = session.post(
+        f"{base_url}/api/v1/addresses",
+        headers=user_headers,
+        json=payload,
+        timeout=5,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == expected_error
+
+
 @pytest.mark.xfail(
     strict=True,
     reason="BUG: creating a new default address does not clear the previous default",

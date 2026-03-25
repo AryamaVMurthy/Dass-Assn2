@@ -49,3 +49,24 @@ def test_product_search_filters_by_name_fragment(session, base_url, user_headers
     assert response.status_code == 200
     assert response.json()
     assert all("app" in item["name"].lower() for item in response.json())
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="BUG: product detail prices do not always match admin DB prices",
+)
+def test_product_detail_prices_match_admin_db_snapshot(
+    session, base_url, user_headers, admin_products_by_id
+):
+    """Each product detail response should expose the exact admin DB price."""
+    for product_id, admin_product in admin_products_by_id.items():
+        if not admin_product["is_active"]:
+            continue
+        response = session.get(
+            f"{base_url}/api/v1/products/{product_id}",
+            headers=user_headers,
+            timeout=10,
+        )
+        if response.status_code != 200:
+            continue
+        assert response.json()["price"] == admin_product["price"]

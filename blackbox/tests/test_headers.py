@@ -35,6 +35,21 @@ def test_user_endpoint_requires_user_id_header(session, base_url, roll_headers):
     assert response.json()["error"] == "Missing X-User-ID header"
 
 
+@pytest.mark.parametrize("user_id", ["0", "-1", "abc"])
+def test_user_endpoint_rejects_invalid_user_id_formats(
+    session, base_url, roll_headers, user_id
+):
+    """User-scoped endpoints should reject malformed or non-positive user IDs."""
+    response = session.get(
+        f"{base_url}/api/v1/profile",
+        headers={**roll_headers, "X-User-ID": user_id},
+        timeout=5,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "X-User-ID must be a valid positive integer"
+
+
 @pytest.mark.xfail(
     strict=True,
     reason="BUG: non-existent X-User-ID returns 404 instead of the documented 400",

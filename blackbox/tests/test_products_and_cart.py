@@ -72,6 +72,29 @@ def test_cart_add_rejects_missing_product(session, base_url, user_headers, clean
     assert response.json()["error"] == "Product not found"
 
 
+def test_cart_add_rejects_quantity_above_stock(
+    session, base_url, user_headers, clean_cart, admin_products_by_id
+):
+    """Adding more items than available stock should fail with a 400 error."""
+    product = next(
+        item
+        for item in admin_products_by_id.values()
+        if item["is_active"] and item["stock_quantity"] > 0
+    )
+    response = session.post(
+        f"{base_url}/api/v1/cart/add",
+        headers=user_headers,
+        json={
+            "product_id": product["product_id"],
+            "quantity": product["stock_quantity"] + 1,
+        },
+        timeout=5,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "Insufficient stock"
+
+
 @pytest.mark.xfail(
     strict=True,
     reason="BUG: cart add accepts quantity 0 instead of rejecting it",

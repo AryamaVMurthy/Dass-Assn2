@@ -117,7 +117,7 @@ The complete suite was run with:
 Final result:
 
 ```text
-40 passed, 15 xfailed in 1.05s
+48 passed, 16 xfailed in 6.04s
 ```
 
 The expected failures corresponded to real API defects confirmed against the documentation.
@@ -139,21 +139,19 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Why it was a bug:
   - the documentation stated that missing or invalid `X-User-ID` values returned `400`
 
-### Bug 2: Address update returned old data instead of updated data
-- Endpoint: `PUT /api/v1/addresses/{address_id}`
+### Bug 2: Creating a new default address did not clear the previous default
+- Endpoint: `POST /api/v1/addresses`
 - Request:
-  - Method: `PUT`
-  - URL: `/api/v1/addresses/{address_id}`
+  - Method: `POST`
+  - URL: `/api/v1/addresses`
   - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
-  - Body: `{"street": "<new street>", "is_default": true}`
+  - Body: two valid address-creation requests, each with `"is_default": true`
 - Expected result:
-  - status `200`
-  - response should have shown the updated address data
+  - only one address should have remained default after the second request
 - Actual result:
-  - status `200`
-  - response still showed the old street and old `is_default` value
+  - both newly created addresses remained marked as default
 - Why it was a bug:
-  - the documentation explicitly said that the response had to show the new updated data
+  - the documentation required that adding a new default address must first clear the previous default
 
 ### Bug 3: Address creation accepted a non-digit pincode
 - Endpoint: `POST /api/v1/addresses`
@@ -233,43 +231,11 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Expected result:
   - wallet balance should have decreased by exactly `1`
 - Actual result:
-  - the API returned success but reduced the balance by `1.6`
+  - the API returned success but reduced the balance by `1.2`
 - Why it was a bug:
   - the documentation said the exact amount requested had to be deducted and no extra amount should have been taken
 
-### Bug 9: Expired coupons were accepted
-- Endpoint: `POST /api/v1/coupon/apply`
-- Request:
-  - Method: `POST`
-  - URL: `/api/v1/coupon/apply`
-  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
-  - Body: `{"coupon_code": "EXPIRED100"}`
-- Expected result:
-  - status `400`
-  - the coupon should have been rejected because it was expired
-- Actual result:
-  - status `200`
-  - the coupon was applied and the discount was granted
-- Why it was a bug:
-  - the documentation said expired coupons had to be rejected
-
-### Bug 10: Checkout accepted an empty cart
-- Endpoint: `POST /api/v1/checkout`
-- Request:
-  - Method: `POST`
-  - URL: `/api/v1/checkout`
-  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
-  - Body: `{"payment_method": "CARD"}`
-- Expected result:
-  - status `400`
-  - checkout should have failed because the cart was empty
-- Actual result:
-  - status `200`
-  - an order was created with zero totals
-- Why it was a bug:
-  - the documentation explicitly said the cart must not be empty during checkout
-
-### Bug 11: Cancelled orders did not restore stock
+### Bug 9: Cancelled orders did not restore stock
 - Endpoint: `POST /api/v1/orders/{order_id}/cancel`
 - Request:
   - Method: `POST`
@@ -285,7 +251,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Why it was a bug:
   - the documentation said that cancelled orders had to add all items back to stock
 
-### Bug 12: Product list price did not match the admin DB snapshot
+### Bug 10: Product list price did not match the admin DB snapshot
 - Endpoint: `GET /api/v1/products`
 - Request:
   - Method: `GET`
@@ -298,7 +264,20 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Why it was a bug:
   - the documentation said the product price shown to users had to be the exact real price stored in the database
 
-### Bug 13: Reviews endpoint accepted rating `0`
+### Bug 11: Product detail price did not always match the admin DB snapshot
+- Endpoint: `GET /api/v1/products/{product_id}`
+- Request:
+  - Method: `GET`
+  - URL: `/api/v1/products/{product_id}`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
+- Expected result:
+  - the detail response price should have matched the latest price returned by `GET /api/v1/admin/products`
+- Actual result:
+  - at least one product detail differed; for example product `143` returned user-facing price `290` while the admin DB snapshot returned `294.74`
+- Why it was a bug:
+  - the documentation said the product price shown to users had to be the exact real price stored in the database
+
+### Bug 12: Reviews endpoint accepted rating `0`
 - Endpoint: `POST /api/v1/products/{product_id}/reviews`
 - Request:
   - Method: `POST`
@@ -313,7 +292,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Why it was a bug:
   - the documentation said rating had to be between `1` and `5`
 
-### Bug 14: Reviews endpoint accepted rating above `5`
+### Bug 13: Reviews endpoint accepted rating above `5`
 - Endpoint: `POST /api/v1/products/{product_id}/reviews`
 - Request:
   - Method: `POST`
@@ -326,9 +305,9 @@ The expected failures corresponded to real API defects confirmed against the doc
   - status `200`
   - the review was created successfully
 - Why it was a bug:
-  - the documentation said rating had to stay within the closed interval `1..5`
+  - the documentation said rating had to be between `1` and `5`
 
-### Bug 15: Profile update accepted phone values containing letters
+### Bug 14: Profile update accepted phone values containing letters
 - Endpoint: `PUT /api/v1/profile`
 - Request:
   - Method: `PUT`
@@ -344,6 +323,35 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Why it was a bug:
   - the documentation required the phone number to contain exactly ten digits, not merely ten characters
 
+### Bug 15: CARD checkout invoice total did not equal subtotal plus GST
+- Endpoint: `GET /api/v1/orders/{order_id}/invoice`
+- Request:
+  - Method: `GET`
+  - URL: `/api/v1/orders/{order_id}/invoice`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
+- Expected result:
+  - the invoice total should have equaled `subtotal + gst_amount`
+- Actual result:
+  - the invoice returned `subtotal = 120.00000000000001`, `gst_amount = 12.3`, and `total_amount = 142.3`
+- Why it was a bug:
+  - the documentation said the invoice subtotal and GST had to add up to the exact total amount
+
+### Bug 16: Coupon minimum cart value was not enforced for `BONUS75`
+- Endpoint: `POST /api/v1/coupon/apply`
+- Request:
+  - Method: `POST`
+  - URL: `/api/v1/coupon/apply`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
+  - Body: `{"coupon_code": "BONUS75"}`
+- Expected result:
+  - status `400`
+  - the coupon should have been rejected when the cart total was below its documented minimum cart value of `750`
+- Actual result:
+  - status `200`
+  - the coupon was applied successfully even when the cart did not meet the minimum-value rule
+- Why it was a bug:
+  - the documentation said coupon application had to enforce the minimum cart value before granting a discount
+
 ## 3.6 Summary
 
-The black-box suite covered the major documented endpoint groups of the QuickCart API and identified fifteen reproducible contract violations. The tests remained executable, isolated enough for repeated runs, and useful for ongoing verification because strict expected-failure markers were used for every confirmed defect.
+The black-box suite covered the major documented endpoint groups of the QuickCart API and identified sixteen reproducible contract violations for roll number `2024101043`. The tests remained executable, isolated enough for repeated runs, and useful for ongoing verification because strict expected-failure markers were used for every confirmed defect.
