@@ -49,6 +49,10 @@ def test_wallet_add_and_pay_change_balance_by_exact_amount(
     assert after_payment == round(after_top_up - 1, 2)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="BUG: invoice total does not equal subtotal plus GST for CARD checkout",
+)
 def test_checkout_card_creates_paid_order_with_expected_invoice_values(
     session, base_url, user_headers, clean_cart
 ):
@@ -76,9 +80,9 @@ def test_checkout_card_creates_paid_order_with_expected_invoice_values(
     assert checkout.status_code == 200
     assert checkout.json()["payment_status"] == "PAID"
     assert invoice.status_code == 200
-    assert invoice.json()["subtotal"] + invoice.json()["gst_amount"] == invoice.json()[
-        "total_amount"
-    ]
+    assert invoice.json()["subtotal"] + invoice.json()["gst_amount"] == pytest.approx(
+        invoice.json()["total_amount"], abs=1e-9
+    )
 
 
 def test_cart_update_and_remove_follow_documented_error_rules(
@@ -134,10 +138,6 @@ def test_cart_clear_empties_the_cart(session, base_url, user_headers, clean_cart
     assert cart_response.json()["items"] == []
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: empty-cart checkout succeeds instead of returning 400",
-)
 def test_checkout_rejects_empty_cart(session, base_url, user_headers, clean_cart):
     """Checkout should fail when the cart is empty."""
     response = session.post(
@@ -324,6 +324,10 @@ def test_cancelling_order_restores_product_stock(
     assert stock_after[1] == stock_before[1]
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="BUG: coupon minimum cart value is not enforced for BONUS75",
+)
 def test_coupon_rejects_cart_value_below_minimum(
     session, base_url, user_headers, clean_cart
 ):
@@ -338,7 +342,7 @@ def test_coupon_rejects_cart_value_below_minimum(
     response = session.post(
         f"{base_url}/api/v1/coupon/apply",
         headers=user_headers,
-        json={"coupon_code": "BIGDEAL500"},
+        json={"coupon_code": "BONUS75"},
         timeout=10,
     )
 
@@ -346,10 +350,6 @@ def test_coupon_rejects_cart_value_below_minimum(
     assert response.json()["error"] == "Cart value below minimum"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: expired coupons are accepted instead of being rejected",
-)
 def test_expired_coupon_should_be_rejected(session, base_url, user_headers, clean_cart):
     """Expired coupons should not be applied to the cart."""
     session.post(
@@ -366,6 +366,7 @@ def test_expired_coupon_should_be_rejected(session, base_url, user_headers, clea
     )
 
     assert response.status_code == 400
+    assert response.json()["error"] == "Coupon expired"
 
 
 def test_support_ticket_status_only_moves_forward(session, base_url, user_headers):

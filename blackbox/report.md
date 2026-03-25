@@ -129,7 +129,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `GET`
   - URL: `/api/v1/profile`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 999999`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 999999`
 - Expected result:
   - status `400`
   - the user header should have been treated as invalid
@@ -144,7 +144,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `PUT`
   - URL: `/api/v1/addresses/{address_id}`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
   - Body: `{"street": "<new street>", "is_default": true}`
 - Expected result:
   - status `200`
@@ -160,7 +160,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `POST`
   - URL: `/api/v1/addresses`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
   - Body: `{"label":"HOME","street":"12345 Main St","city":"Delhi","pincode":"12AB56","is_default":false}`
 - Expected result:
   - status `400`
@@ -176,7 +176,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `POST`
   - URL: `/api/v1/cart/add`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
   - Body: `{"product_id": 1, "quantity": 0}`
 - Expected result:
   - status `400`
@@ -191,7 +191,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `POST`
   - URL: `/api/v1/cart/add`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
   - Body: `{"product_id": 1, "quantity": -1}`
 - Expected result:
   - status `400`
@@ -228,7 +228,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `POST`
   - URL: `/api/v1/wallet/pay`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
   - Body: `{"amount": 1}`
 - Expected result:
   - wallet balance should have decreased by exactly `1`
@@ -242,7 +242,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `POST`
   - URL: `/api/v1/coupon/apply`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
   - Body: `{"coupon_code": "EXPIRED100"}`
 - Expected result:
   - status `400`
@@ -258,7 +258,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `POST`
   - URL: `/api/v1/checkout`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
   - Body: `{"payment_method": "CARD"}`
 - Expected result:
   - status `400`
@@ -274,7 +274,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `POST`
   - URL: `/api/v1/orders/{order_id}/cancel`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
   - Body: none
 - Expected result:
   - status `200`
@@ -290,7 +290,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `GET`
   - URL: `/api/v1/products?sort=price_asc`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
 - Expected result:
   - every user-facing product price should have matched the latest price returned by `GET /api/v1/admin/products`
 - Actual result:
@@ -303,7 +303,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `POST`
   - URL: `/api/v1/products/1/reviews`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
   - Body: `{"rating": 0, "comment": "bad"}`
 - Expected result:
   - status `400`
@@ -318,7 +318,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `POST`
   - URL: `/api/v1/products/1/reviews`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
   - Body: `{"rating": 6, "comment": "too high"}`
 - Expected result:
   - status `400`
@@ -333,7 +333,7 @@ The expected failures corresponded to real API defects confirmed against the doc
 - Request:
   - Method: `PUT`
   - URL: `/api/v1/profile`
-  - Headers: `X-Roll-Number: 1`, `X-User-ID: 1`
+  - Headers: `X-Roll-Number: 2024101043`, `X-User-ID: 1`
   - Body: `{"name":"Valid Name","phone":"12345abcde"}`
 - Expected result:
   - status `400`

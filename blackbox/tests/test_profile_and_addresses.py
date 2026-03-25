@@ -121,6 +121,10 @@ def test_delete_missing_address_returns_404(session, base_url, user_headers):
     assert response.status_code == 404
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="BUG: creating a new default address does not clear the previous default",
+)
 def test_new_default_address_replaces_previous_default(session, base_url, user_headers):
     """Only one address should remain default after adding a new default address."""
     first_payload = {
@@ -180,10 +184,6 @@ def test_new_default_address_replaces_previous_default(session, base_url, user_h
         )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: address update response returns old data instead of updated data",
-)
 def test_address_update_response_should_show_new_data(session, base_url, user_headers):
     """The update endpoint should return the updated address payload."""
     payload = {

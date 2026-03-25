@@ -43,7 +43,7 @@ def test_user_endpoint_rejects_non_existent_user_id_with_400(session, base_url):
     """User-scoped endpoints should treat unknown user IDs as invalid headers."""
     response = session.get(
         f"{base_url}/api/v1/profile",
-        headers={"X-Roll-Number": "1", "X-User-ID": "999999"},
+        headers={"X-Roll-Number": "2024101043", "X-User-ID": "999999"},
         timeout=5,
     )
 

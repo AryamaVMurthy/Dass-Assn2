@@ -94,7 +94,7 @@ The QuickCart API server had to be running locally before the black-box tests we
 
 ```text
 QUICKCART_BASE_URL=http://127.0.0.1:8080
-QUICKCART_ROLL_NUMBER=1
+QUICKCART_ROLL_NUMBER=2024101043
 ```
 
 These could be overridden with environment variables if needed.
